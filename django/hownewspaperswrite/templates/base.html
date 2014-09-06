@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang=en>
+	<head>
+		<meta charset=utf-8>
+		<title>{{ home }}</title>
+                <LINK REL=StyleSheet HREF="/hownewspaperswrite/media/css/style.css" TYPE="text/css" MEDIA=screen>
+                
+		<script type='text/javascript' src='http://swfobject.googlecode.com/svn/trunk/swfobject/swfobject.js'></script>
+		<script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js'></script>
+                
+          
+
+
+        {% block initialize %}
+        
+        {% endblock %}
+        
+	</head>
+   
+    
+        <body>
+    
+       <header>
+
+        {% include "header.html" %}
+   
+   
+</header>
+     	 	{% block content %}
+            {% endblock %}
+   
+  	</body>
+</html>

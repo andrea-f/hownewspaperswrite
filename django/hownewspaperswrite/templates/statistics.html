@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="sommario-articoli">
+Sommario numero articoli:<br>
+{% for key, value in newspapers.items %}
+    {{ key }} : {{ value }}
+    
+    <br>
+{% endfor %}
+</div>
+<hr>
+<div class="sommari" style="display: inline-table; white-space: nowrap;">
+<div class="sommario-parole" style="float:left; margin-right: 20px;">
+    <h2>Termini piu' usati su <br>{{ total_words }} parole:</h2><br>
+   
+    {% for item in topused %}
+        {{ item.0 }} : {{ item.1.numeric }} : {{ item.1.percentage }}%<br>
+    {% endfor %}
+</div>
+{% for giornale in giornali %}
+<div class="giornale-{{ giornale.testata }}" style="float:right;">
+    <div class="giornale-parole" >
+        <h2>{{ giornale.testata }}<br></h2>
+        
+        {% for item in giornale.topused %}
+            
+            {{ item.0 }} : {{ item.1.numeric }} : {{ item.1.percentage }}%<br>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+</div>
+{% endblock %}
