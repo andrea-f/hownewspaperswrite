@@ -1,5 +1,5 @@
 from django.conf.urls import patterns, include, url
-from hownewspaperswrite_app.views import home, testate, statistiche_generali
+from hownewspaperswrite_app.views import home, testate, statistiche_generali, trends
 from django.contrib.auth import views
 from django.contrib import admin
 admin.autodiscover()
@@ -12,6 +12,7 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
     (r'^testate/', testate),
     (r'^statistiche/', statistiche_generali),
+    (r'^trends/', trends),
     (r'^$/', home),
     (r'', home),
 )

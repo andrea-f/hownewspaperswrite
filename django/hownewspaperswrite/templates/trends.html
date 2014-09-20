@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="trends-{{ filter }}">
+<b>{{ filter }} piu' coperti dai media:</b><br>
+
+{% for nome, valore in nomi %}
+{{ nome }} : {{ valore.subtipo }} : {{ valore.valore }} : {{ valore.num_articoli }}<br>
+{% endfor %}
+</div>
+<hr>
+<div class="sommari" style="display: inline-table; white-space: nowrap;">
+<b>Nomi piu' coperti dai media:</b><br>
+{% for key, value in tutti.items %}
+    {{ key }} : {{ value.subtipo }}<br>
+{% endfor %}
+
+</div>
+{% endblock %}

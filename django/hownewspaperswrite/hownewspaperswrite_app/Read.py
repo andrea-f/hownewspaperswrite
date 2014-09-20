@@ -67,33 +67,44 @@ class Read(object):
         else:
             return data
 
-    def getMostCommonWordsTotal(self, respType = "tuple", filter = "", include_percentage = True):
+    def getMostCommonWordsTotal(self, respType = "tuple", filter = "", include_language = False, include_percentage = True, include_avg_per_article = False):
         """Calculates most common words aggregated on all sites."""
         #import math
         topused = {}
         if len(filter) != 0:
-            results = PostItem.most_common.filter(testata__title = filter)
+            results = PostItem.stems.filter(testata__title = filter)
         else:
-            results = PostItem.most_common.all()
+            results = PostItem.stems.all()
         total_words = self.getTotalWordsInt(testata = filter)
         topused['Words'] = total_words
         allWords = []
-
+        langs = []
         for item in results:
             if item.word not in allWords:
                 topused.setdefault(item.word,0)
                 allWords.append(item.word)
-            topused[item.word] += item.numeric  
+            topused[item.word] += item.numeric
+            langs.append(item.testata.language)
                 #sys.stderr.flush()
                 #sys.stderr.write("Word: %s\nPerc word: %s\nWord: %s\nTotal words: %s\n" % ((item.word).encode('utf8'), str(num),str(item.numeric),str(total_words)))
         wordfreqpct = {}
-        
+        c = 0
+        bare = True
         for key, value in topused.items():
             num = round(((float(value)/float(total_words))*100), 3)
+            wordfreqpct[key] = {"numeric": value}
             if include_percentage is True:
-                wordfreqpct[key] = {"numeric": value, "percentage":num}
-            else:
+                wordfreqpct[key]["percentage"] = num
+                bare = False
+
+            if include_language is True:
+                wordfreqpct[key]["language"] = langs[c]
+                bare = False
+            #if include_avg_per_article is True:
+            #    wordfreqpct[key]["avg"] =
+            if bare is True:
                 wordfreqpct[key] = value
+            c += 1
         return self.convertToResponseType(wordfreqpct, respType)
         #return wordfreqpct
 
@@ -131,7 +142,7 @@ class Read(object):
         for site in allSites:
             topused = {}
             total_words = self.getTotalWordsInt(testata = site.title)
-            common = PostItem.most_common.filter(testata__title = site.title)
+            common = PostItem.stems.filter(testata__title = site.title)
             for word in common:
                 count = self.getWordFreqBySite(site, word)
                 num = round(((float(count)/float(total_words))*100), 3)
@@ -177,7 +188,7 @@ class Read(object):
         print "Total articles: %s Total words: %s with an average of %s per article" % (str(totalWordsNum), len(totale_articoli),avg)
         return totale_articoli
 
-    def getAllWordsFrequency(self):
+    def calculateWordFrequencies(self):
         """Return words with occurrences."""
         paroleTesto = {}
         totale = ""
@@ -212,8 +223,24 @@ class Read(object):
         #data["total"] = wordcount
         return wordcount
 
-    def getTopWordsBySite(self):
-        allSites = Site.objects.all()
+    def getAllWords(self, testata = ""):
+        print "Getting all words in db..."
+        if len(testata) == 0:
+            allArticles = SitePost.objects.all()
+        else:
+            allArticles = SitePost.objects.filter(testata__title = testata)
+        #data = {}
+        words = ""
+        for article in allArticles:
+            txt = [w for w in article.testo.split() if len(w)> 4 and not w.isupper() and (len(w)>5 or not w.islower()) and w.isalpha()]
+            words += " "+' '.join(txt)#.split()
+        return words
+
+    def getTopWordsBySite(self, testata = ""):
+        if len(testata) == 0:
+            allSites = Site.objects.all()
+        else:
+            allSites = Site.objects.filter(title = testata)
         data = {}
         for site in allSites:
             wordcount = self.getAllTopWords(testata = site.title)
@@ -244,6 +271,25 @@ class Read(object):
             return post
         except ObjectDoesNotExist:
             return False
+
+
+    #def getTfids(self):
+
+    def getWord(self, word = "", stem = ""):
+        """Retrieves one word from database."""
+        items = []
+        try:
+            if len(stem) > 0:
+                #for mysql
+                #items = PostItem.most_common.filter(word__istartswith=stem).extra(where=["CHAR_LENGTH(stem) < 1"])
+                #for sqlite3
+                items = PostItem.most_common.filter(word__istartswith=stem)#.extra(where=["LENGTH(stem) < 1"])
+            else:
+                items = PostItem.most_common.filter(word__icontains=word)            
+        except ObjectDoesNotExist:
+            pass
+        return items
+        
 
 ###### FUNZIONI SPECIFICHE PER TESTATA #####
 
@@ -282,3 +328,41 @@ class Read(object):
         }]
         """
 
+#### FUNZIONI SPECIFICHE PER ENTITY ####
+    def getEntities(self,word = "", tipo = "",filter = ""):
+        """Returns all entities by filter."""
+        if "PERSON" in tipo:
+            if len(filter) == 0:
+                results = Entity.people.all()
+            else:
+                results = Entity.people.filter(subtipo__icontains = filter)
+
+        else:
+            results = Entity.objects.all()
+        data = {}
+        for res in results:
+            #todo fix aritcles to articles
+            data[res.name] = {"valore": res.valore, "subtipo": res.subtipo, "num_articoli": res.aritcles.count()}
+        return data
+
+
+    def getEntity(self, name):
+        entities = Entity.objects.filter(name = name)
+        return entities
+
+    def getArticlesByWord(self, word):
+        """Gets word in a bunch of text."""
+        articles = SitePost.objects.filter(testo__icontains = word)
+        return articles
+
+
+    def getItems(self, word = "", testata = ""):
+        """Returns items from db."""
+
+        if len(testata) == 0:
+            items = PostItem.objects.filter(word = word)
+        elif len(word) == 0:
+            items = PostItem.objects.filter(testata__title = testata)
+        else:
+            items = PostItem.objects.filter(word = word, testata__title = testata)
+        return items

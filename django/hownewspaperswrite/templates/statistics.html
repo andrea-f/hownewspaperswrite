@@ -18,12 +18,13 @@ Sommario numero articoli:<br>
         {{ item.0 }} : {{ item.1.numeric }} : {{ item.1.percentage }}%<br>
     {% endfor %}
 </div>
-{% for giornale in giornali %}
-<div class="giornale-{{ giornale.testata }}" style="float:right;">
+
+{% for giornale,parole in giornali.items %}
+<div class="giornale-{{ giornale }}" style="float:right;">
     <div class="giornale-parole" >
-        <h2>{{ giornale.testata }}<br></h2>
+        <h2>{{ giornale }}<br></h2>
         
-        {% for item in giornale.topused %}
+        {% for item in parole %}
             
             {{ item.0 }} : {{ item.1.numeric }} : {{ item.1.percentage }}%<br>
         {% endfor %}

@@ -10,6 +10,7 @@ lib = os.path.abspath(os.path.join(os.path.dirname( __file__ ),'..','..', '..', 
 sys.path.append(lib)
 import Matrix
 import TextOperations
+import NerExtraction
 import pprint
 from Read import Read
 
@@ -20,6 +21,19 @@ class GeneralDataView(object):
         #result = hasattr(DataManagement,req)()
         """"""
         self.dm = Read()
+
+    def trends(self, request):
+        """Get trends for politics organizations etc..."""
+        filter = "Politici"
+        fil_name = "Politic"
+        tipo = "PERSON"
+        nomi = sorted(self.dm.getEntities(tipo = tipo, filter = fil_name).items(), key = lambda x:x[1], reverse = True)
+        sys.stderr.write("Fetched: %s" % (str(nomi)))
+        sys.stderr.flush()
+        
+        tutti = self.dm.getEntities(tipo = tipo)
+        return render_to_response('trends.html', locals(), RequestContext(request))
+
 
     def fetch(self, request):
         newspapers = self.dm.getTotalArticles()
@@ -46,6 +60,8 @@ class DataOperations():
         """"""
         self.abs_path = abs_path
         self.matrix = Matrix.CreateMatrix(abs_path = abs_path)
+        self.ner = NerExtraction.NerExtraction()
+        self.gmd = Read()
 
     def saveMatrix(self, words = {}, abs_path = "", filename = "", min = 0.001, max = 10.0):
         """Generates and saves matrix file from wordlist dictionary of word and occurrences.
@@ -55,12 +71,8 @@ class DataOperations():
         """
         if len(abs_path) == 0:
             abs_path = self.abs_path
-        
-        gmd = Read()
-        #if len(words) == 0:
-         #   words =
         #testate is dict of newspaper title and associated a dict with words and their frequency
-        testate = gmd.getMostCommonWordsBySite(respType = "dict", include_percentage = False)
+        testate = self.gmd.getMostCommonWordsBySite(respType = "dict", include_percentage = False)
         print "Generating and saving matrix, calling Matrix()..."
         wordlist = self.matrix.saveMatrix(words, testate, abs_path, filename = filename, min = min, max = max)
         return wordlist
@@ -75,4 +87,8 @@ class DataOperations():
         print "Drawing the dendrogram..."
         imgFile = self.matrix.draw_dendrogram(dataDict['clusters'], dataDict['titles'], jpeg = filename+".jpg")
         return imgFile
+
+
+
+    
 

@@ -11,18 +11,15 @@ class SaveDataInDatabase:
 
    
 
-    def dropTable(request):
+    def dropTable(request, table_name = "hownewspaperswrite_app_entity_items" ):
+        #hownewspaperswrite_app_entity
         from django.db import connection, transaction
         cursor = connection.cursor()
         try:
-            cursor.execute("DROP TABLE 'hownewspaperswrite_app_postitem';")
+            cursor.execute("DROP TABLE "+table_name+";")
         except Exception as e:
             print "Error in dropping app_postitem table %s " % e
-        try:
-
-            cursor.execute("DROP TABLE 'hownewspaperswrite_app_postitem_testate';")
-        except Exception as e:
-            print "Error in dropping table of items: %s" % e
+        
 
 
 
@@ -96,9 +93,9 @@ class SaveDataInDatabase:
         print "AddSitePost: Url: %s | Created? %s | Links created: %s" % (v.url_articolo, created, tot)
         return created
         
-        
+    
 
-    def addPostItem(self, site, word, tipo, parent_url = "", numeric = 0):
+    def addPostItem(self, site, word, tipo, parent_url = "", numeric = 0, tfidf = 0, stem = ""):
         """Add video to db
 
         :param video: Django video DB object containing title, description, url, thumb url ...
@@ -107,16 +104,9 @@ class SaveDataInDatabase:
             * **v** -- Created video object in database, dict.
             * **created** -- True if video is created, false if video is already present, bool.
         """
-        from models import PostItem
-        #if len(parent_url) != 0 and "http" in parent_url:
-        #    word = parent_url
-        
+        from models import PostItem        
         try:
                 v = PostItem.objects.get(word = word, testata_nome = site.title)
-                #for testata in v.testate.all():
-                #    if site.title not in testata.title:
-                #        v.testate.add(site)
-
                 print colored("Updating: %s | %s | %s | %s | %s" % (word,v.testata.title, tipo,v.numeric, numeric), "red")
                 v.numeric = int(v.numeric)+int(numeric)                
         except ObjectDoesNotExist:
@@ -130,6 +120,80 @@ class SaveDataInDatabase:
                 )
                 #v.testate.add(site)
                 print colored("Saving: %s | %s | %s | %s" % (word,site.title, tipo, numeric), "green")
-        print colored("Final: %s | %s | %s | %s \n" % (word,site.title, tipo,v.numeric), "white")
+        if len(stem) > 0:
+            v.stem = stem
+        if tfidf > 0:
+            #db specific hack
+            v.tfidf = int(tfidf * 100000)
+        print colored("Final: %s | %s | %s | %s | %s\n" % (word,site.title, tipo,v.numeric, v.stem), "white")
         return v
+
+    def addEntity(self, nome= "", word = "", tipo = "", subtipo = "", value = 0, articles_ref = [], categoria = "cd ", add_items = True, add_articles = False):
+        from models import Entity, PostItem, SitePost
+        print colored("Saving %s from %s..." % (nome, word), "green")
         
+        try:
+            e = Entity.objects.get(name = nome)
+        except ObjectDoesNotExist:
+            e = Entity.objects.create(
+                name = nome,
+                tipo = tipo,
+                subtipo = subtipo,
+                category = categoria
+
+            )
+
+        if value != e.valore:
+            e.valore = value
+        if add_items is True:
+            posts = PostItem.stems.filter(word__istartswith = word)
+            c = 0
+            for post in posts:
+                c +=1
+                e.items.add(post)
+            print "Linked %s to %s items." % (nome, c)
+        
+        
+
+        def saveArticle(e,articles):
+            d = 0
+            for article in articles:
+                d +=1
+                #TYPOOOOOOOOOOO
+                e.aritcles.add(article)
+                print "Linked %s to %s articles." % (nome,d)
+                e.save()
+                return e
+
+        if add_articles is True:
+            articles = SitePost.objects.filter(testo_icontains = word)
+            e = saveArticle(e, articles)
+        if len(articles_ref) > 0:
+            e = saveArticle(e, articles_ref)
+
+        print colored("Saved %s" % e.name, "yellow")
+        return e
+        
+
+    def addArticlesToEntity(self, entity = {}):
+        """Adds articles to entity."""
+        from models import Entity, PostItem, SitePost
+        if len(entity) == 0:
+            entities = Entity.objects.all()
+        else:
+            entities = [entity]
+        c = 0
+        for ent in entities:
+            print "Matching articles for %s..." % ent.name
+            articles = SitePost.objects.filter(testo__icontains = ent.name)
+            for article in articles:
+                for ent_art in ent.aritcles.all():
+                    if article.titolo not in ent_art.titolo:
+                        ent.aritcles.add(article)
+                        c += 1
+                        ent.save()
+            print "[AddToModels][addArticlesToEntity] Saved %s for %s " % (ent.aritcles.count(), ent.name)
+        return {
+            "entities": len(entities),
+            "total_articles": len()
+        }

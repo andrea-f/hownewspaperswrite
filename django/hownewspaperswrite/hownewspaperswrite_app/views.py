@@ -24,3 +24,10 @@ def statistiche_generali(request):
 
 def testate(request):
     """Returns newspaper specific information."""
+
+
+def trends(request):
+    """Returns aggregated information on data present in database."""
+    gdw = GeneralDataView()
+    response = gdw.trends(request)
+    return response

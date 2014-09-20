@@ -98,4 +98,7 @@ TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, "templates"),
 )
 
-STATIC_URL = '/static/'
+STATIC_URL = '/hownewspaperswrite/static/'
+
+ADMIN_MEDIA_PREFIX = '/hownewspaperswrite/static/admin/'
+

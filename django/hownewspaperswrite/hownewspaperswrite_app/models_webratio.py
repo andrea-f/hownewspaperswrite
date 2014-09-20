@@ -14,7 +14,7 @@ class Site(Created):
     description = models.TextField(blank=True, null=True)
     thumbnail = models.CharField(max_length=150, blank=True)
     language = models.CharField(max_length= 70, default = 'eng')
-    
+    country = models.CharField(max_length=200)
 
     def __unicode__(self):
         if self.title is None:
